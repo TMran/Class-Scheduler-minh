@@ -8,16 +8,18 @@
 }
 
 .App-header {
-  background-color: #282c34;
+  background: linear-gradient(135deg, #003366, #004080);
   padding: 20px;
   color: white;
   text-align: center;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 4px rgba(0,51,102,0.3);
 }
 
 .App-header h1 {
   margin: 0;
   font-size: 2rem;
+  font-weight: 600;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.3);
 }
 
 .main-container {

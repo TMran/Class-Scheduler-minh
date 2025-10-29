@@ -7,8 +7,8 @@
 
 .calendar-view h2 {
   margin-top: 0;
-  color: #495057;
-  border-bottom: 2px solid #28a745;
+  color: #003366;
+  border-bottom: 2px solid #003366;
   padding-bottom: 10px;
 }
 
@@ -22,7 +22,7 @@
 .calendar-header {
   display: grid;
   grid-template-columns: 100px repeat(5, 1fr);
-  background-color: #007bff;
+  background: linear-gradient(135deg, #003366, #004080);
   color: white;
 }
 
