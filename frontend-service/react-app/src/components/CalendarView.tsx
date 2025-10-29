@@ -35,10 +35,6 @@ const CalendarView: React.FC = () => {
           </div>
         ))}
       </div>
-      
-      <div className="calendar-footer">
-        <p>Drag and drop courses here to schedule them</p>
-      </div>
     </div>
   );
 };
