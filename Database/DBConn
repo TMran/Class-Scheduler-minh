@@ -1,6 +1,11 @@
 import sqlite3
+import os
 
-conn = sqlite3.connect("C:/Users/bjdot/Desktop/ClassScheduler/Scheduler.db")
+# Get the directory where this script is located
+db_dir = os.path.dirname(os.path.abspath(__file__))
+db_path = os.path.join(db_dir, "Scheduler")
+
+conn = sqlite3.connect(db_path)
 cursor = conn.cursor()
 
 cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
