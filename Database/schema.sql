@@ -34,13 +34,13 @@ CREATE TABLE IF NOT EXISTS courses (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     course_code TEXT NOT NULL,
     course_number TEXT NOT NULL,
+    crn INTEGER NOT NULL,
     title TEXT NOT NULL,
     description TEXT,
     credits INTEGER NOT NULL,
     department_id INTEGER NOT NULL,
     prerequisites TEXT,
-    is_active INTEGER DEFAULT 1,
-    UNIQUE(course_code, course_number),
+    UNIQUE(course_code, course_number, crn),
     FOREIGN KEY (department_id) REFERENCES departments(id) ON DELETE CASCADE
 );
 
@@ -109,7 +109,6 @@ CREATE TABLE IF NOT EXISTS instructors (
 CREATE TABLE IF NOT EXISTS buildings (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
-    code TEXT NOT NULL UNIQUE,
     address TEXT
 );
 
@@ -118,7 +117,6 @@ CREATE TABLE IF NOT EXISTS rooms (
     building_id INTEGER NOT NULL,
     room_number TEXT NOT NULL,
     capacity INTEGER DEFAULT 30,
-    room_type TEXT CHECK(room_type IN ('classroom', 'lab', 'lecture_hall', 'seminar')) DEFAULT 'classroom',
     UNIQUE(building_id, room_number),
     FOREIGN KEY (building_id) REFERENCES buildings(id) ON DELETE CASCADE
 );
@@ -150,65 +148,6 @@ CREATE TABLE IF NOT EXISTS meeting_times (
     day_of_week TEXT CHECK(day_of_week IN ('monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday')) NOT NULL,
     start_time TEXT NOT NULL,
     end_time TEXT NOT NULL,
-    meeting_type TEXT CHECK(meeting_type IN ('lecture', 'lab', 'discussion', 'exam')) DEFAULT 'lecture',
-    FOREIGN KEY (section_id) REFERENCES course_sections(id) ON DELETE CASCADE
-);
-
--- ================================
--- 6. STUDENTS
--- ================================
-
-CREATE TABLE IF NOT EXISTS students (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    student_id TEXT NOT NULL UNIQUE,
-    first_name TEXT NOT NULL,
-    last_name TEXT NOT NULL,
-    email TEXT UNIQUE NOT NULL,
-    phone TEXT,
-    major_id INTEGER,
-    minor_id INTEGER,
-    academic_year TEXT CHECK(academic_year IN ('freshman', 'sophomore', 'junior', 'senior', 'graduate')) NOT NULL,
-    gpa REAL DEFAULT 0.00,
-    total_credits_earned INTEGER DEFAULT 0,
-    is_active INTEGER DEFAULT 1,
-    FOREIGN KEY (major_id) REFERENCES majors(id) ON DELETE SET NULL,
-    FOREIGN KEY (minor_id) REFERENCES majors(id) ON DELETE SET NULL
-);
-
-CREATE TABLE IF NOT EXISTS enrollments (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    student_id INTEGER NOT NULL,
-    section_id INTEGER NOT NULL,
-    enrollment_date TEXT DEFAULT CURRENT_TIMESTAMP,
-    status TEXT CHECK(status IN ('enrolled', 'waitlisted', 'dropped', 'completed')) DEFAULT 'enrolled',
-    final_grade TEXT,
-    grade_points REAL,
-    credits_earned INTEGER DEFAULT 0,
-    UNIQUE(student_id, section_id),
-    FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE,
-    FOREIGN KEY (section_id) REFERENCES course_sections(id) ON DELETE CASCADE
-);
-
-CREATE TABLE IF NOT EXISTS student_schedules (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    student_id INTEGER NOT NULL,
-    term_id INTEGER NOT NULL,
-    name TEXT DEFAULT 'My Schedule',
-    is_active INTEGER DEFAULT 0,
-    total_credits INTEGER DEFAULT 0,
-    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE,
-    FOREIGN KEY (term_id) REFERENCES terms(id) ON DELETE CASCADE
-);
-
-CREATE TABLE IF NOT EXISTS schedule_items (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    schedule_id INTEGER NOT NULL,
-    section_id INTEGER NOT NULL,
-    priority INTEGER DEFAULT 1,
-    is_confirmed INTEGER DEFAULT 0,
-    UNIQUE(schedule_id, section_id),
-    FOREIGN KEY (schedule_id) REFERENCES student_schedules(id) ON DELETE CASCADE,
     FOREIGN KEY (section_id) REFERENCES course_sections(id) ON DELETE CASCADE
 );
 
@@ -221,6 +160,3 @@ CREATE INDEX IF NOT EXISTS idx_courses_department ON courses(department_id);
 CREATE INDEX IF NOT EXISTS idx_sections_course_term ON course_sections(course_id, term_id);
 CREATE INDEX IF NOT EXISTS idx_sections_crn ON course_sections(crn);
 CREATE INDEX IF NOT EXISTS idx_meeting_times_section ON meeting_times(section_id);
-CREATE INDEX IF NOT EXISTS idx_students_major ON students(major_id);
-CREATE INDEX IF NOT EXISTS idx_enrollments_student ON enrollments(student_id);
-CREATE INDEX IF NOT EXISTS idx_enrollments_section ON enrollments(section_id);
