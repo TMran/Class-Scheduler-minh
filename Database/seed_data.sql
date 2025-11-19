@@ -127,7 +127,7 @@ INSERT INTO major_requirements (major_id, course_id, requirement_type, is_requir
 (1, 11, 'core', 1),  -- MATH 246
 (1, 13, 'core', 1),  -- MATH 250
 (1, 14, 'core', 1),  -- MATH 350
-(1, 8, 'elective', 0),  -- CSC 461 (AI)
+(1, 8, 'elective', 0);  -- CSC 461 (AI)
 
 -- Mathematics Major Requirements
 INSERT INTO major_requirements (major_id, course_id, requirement_type, is_required) VALUES
@@ -136,7 +136,7 @@ INSERT INTO major_requirements (major_id, course_id, requirement_type, is_requir
 (2, 12, 'core', 1),  -- MATH 247
 (2, 13, 'core', 1),  -- MATH 250
 (2, 14, 'core', 1),  -- MATH 350
-(2, 15, 'core', 1),  -- MATH 360
+(2, 15, 'core', 1);  -- MATH 360
 
 -- Business Major Requirements
 INSERT INTO major_requirements (major_id, course_id, requirement_type, is_required) VALUES
@@ -145,7 +145,7 @@ INSERT INTO major_requirements (major_id, course_id, requirement_type, is_requir
 (3, 18, 'core', 1),  -- BA 301
 (3, 19, 'core', 1),  -- BA 315
 (3, 20, 'core', 1),  -- BA 350
-(3, 21, 'core', 1),  -- BA 401
+(3, 21, 'core', 1);  -- BA 401
 
 -- English Major Requirements
 INSERT INTO major_requirements (major_id, course_id, requirement_type, is_required) VALUES
@@ -153,7 +153,7 @@ INSERT INTO major_requirements (major_id, course_id, requirement_type, is_requir
 (4, 23, 'core', 1),  -- ENG 201
 (4, 24, 'core', 1),  -- ENG 225
 (4, 25, 'core', 1),  -- ENG 301
-(4, 26, 'elective', 0),  -- ENG 350
+(4, 26, 'elective', 0);  -- ENG 350
 
 -- Biology Major Requirements
 INSERT INTO major_requirements (major_id, course_id, requirement_type, is_required) VALUES
@@ -163,7 +163,7 @@ INSERT INTO major_requirements (major_id, course_id, requirement_type, is_requir
 (5, 40, 'core', 1),  -- BIO 310
 (5, 41, 'core', 1),  -- BIO 420
 (5, 42, 'core', 1),  -- CHM 211
-(5, 43, 'core', 1),  -- CHM 212
+(5, 43, 'core', 1);  -- CHM 212
 
 -- Psychology Major Requirements
 INSERT INTO major_requirements (major_id, course_id, requirement_type, is_required) VALUES
