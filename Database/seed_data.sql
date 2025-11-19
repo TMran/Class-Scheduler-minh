@@ -165,13 +165,27 @@ INSERT INTO major_requirements (major_id, course_id, requirement_type, is_requir
 (5, 42, 'core', 1),  -- CHM 211
 (5, 43, 'core', 1);  -- CHM 212
 
+-- Chemistry Major Requirements
+INSERT INTO major_requirements (major_id, course_id, requirement_type, is_required) VALUES
+(6, 40, 'core', 1),  -- CHM 211
+(6, 41, 'core', 1),  -- CHM 212
+(6, 42, 'core', 1),  -- CHM 321
+(6, 43, 'core', 1);  -- CHM 322
+
 -- Psychology Major Requirements
 INSERT INTO major_requirements (major_id, course_id, requirement_type, is_required) VALUES
-(7, 46, 'core', 1),  -- PSY 101
-(7, 47, 'core', 1),  -- PSY 220
-(7, 48, 'core', 1),  -- PSY 250
-(7, 49, 'core', 1),  -- PSY 301
-(7, 50, 'core', 1);  -- PSY 320
+(7, 44, 'core', 1),  -- PSY 101
+(7, 45, 'core', 1),  -- PSY 220
+(7, 46, 'core', 1),  -- PSY 250
+(7, 47, 'core', 1),  -- PSY 301
+(7, 48, 'core', 1);  -- PSY 320
+
+-- History Major Requirements
+INSERT INTO major_requirements (major_id, course_id, requirement_type, is_required) VALUES
+(8, 49, 'core', 1),  -- HIST 101
+(8, 50, 'core', 1),  -- HIST 102
+(8, 51, 'core', 1),  -- HIST 201
+(8, 52, 'core', 1);  -- HIST 202
 
 -- ================================
 -- 5. MAGIS CORE CATEGORIES

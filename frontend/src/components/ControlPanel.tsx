@@ -1,11 +1,34 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './ControlPanel.css';
+
+interface Major {
+  id: number;
+  name: string;
+  code: string;
+  department_name: string;
+}
+
+interface Course {
+  id: number;
+  course_code: string;
+  course_number: string;
+  title: string;
+  credits: number;
+  requirement_type?: string;
+}
+
+interface MagisCoreCategory {
+  id: number;
+  name: string;
+  description: string;
+  min_credits_required: number;
+}
 
 interface SchedulePreferences {
   major: string;
   year: string;
-  requiredCourses: string[];
-  genEdPreferences: string[];
+  requiredCourses: number[];
+  genEdPreferences: number[];
   timePreferences: {
     preferMorning: boolean;
     preferAfternoon: boolean;
@@ -20,6 +43,8 @@ interface SchedulePreferences {
 }
 
 const ControlPanel: React.FC = () => {
+  const API_URL = 'http://localhost:8080';
+
   const [preferences, setPreferences] = useState<SchedulePreferences>({
     major: '',
     year: 'sophomore',
@@ -38,56 +63,59 @@ const ControlPanel: React.FC = () => {
     maxCredits: 15
   });
 
-  const majors = [
-    'Computer Science',
-    'Business Administration',
-    'Psychology', 
-    'Biology',
-    'Engineering',
-    'English',
-    'Mathematics',
-    'History'
-  ];
-
-  const availableCourses = {
-    'Computer Science': [
-      'CSC 548 - Advanced Web Development',
-      'CSC 560 - Database Systems', 
-      'CSC 420 - Software Engineering',
-      'CSC 315 - Data Structures',
-      'CSC 425 - Computer Networks'
-    ],
-    'Business Administration': [
-      'BUS 101 - Intro to Business',
-      'BUS 250 - Marketing Principles',
-      'BUS 300 - Operations Management',
-      'ACC 201 - Financial Accounting'
-    ],
-    // Add more as needed...
-  };
-
-  const genEdOptions = [
-    'English Composition I',
-    'English Composition II',
-    'College Mathematics',
-    'Science with Lab',
-    'Biology',
-    'Chemistry', 
-    'Physics',
-    'Psychology',
-    'Sociology',
-    'History',
-    'Philosophy',
-    'Art History',
-    'Music Appreciation',
-    'Foreign Language',
-    'Literature',
-    'Political Science',
-    'Economics',
-    'Environmental Science'
-  ];
-
+  // State for data from backend
+  const [majors, setMajors] = useState<Major[]>([]);
+  const [availableCourses, setAvailableCourses] = useState<Course[]>([]);
+  const [magisCategories, setMagisCategories] = useState<MagisCoreCategory[]>([]);
+  const [loading, setLoading] = useState(true);
   const [showGenEdDropdown, setShowGenEdDropdown] = useState(false);
+
+  // Fetch majors and Magis Core categories on component mount
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [majorsRes, categoriesRes] = await Promise.all([
+          fetch(`${API_URL}/api/majors`),
+          fetch(`${API_URL}/api/magis-core/categories`)
+        ]);
+        
+        const majorsData = await majorsRes.json();
+        const categoriesData = await categoriesRes.json();
+        
+        setMajors(majorsData);
+        setMagisCategories(categoriesData);
+        setLoading(false);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        setLoading(false);
+      }
+    };
+    
+    fetchData();
+  }, []);
+
+  // Fetch courses when major is selected
+  useEffect(() => {
+    const fetchCourses = async () => {
+      if (!preferences.major) {
+        setAvailableCourses([]);
+        return;
+      }
+      
+      try {
+        const selectedMajor = majors.find(m => m.id.toString() === preferences.major);
+        if (!selectedMajor) return;
+        
+        const response = await fetch(`${API_URL}/api/majors/${selectedMajor.id}/courses`);
+        const coursesData = await response.json();
+        setAvailableCourses(coursesData);
+      } catch (error) {
+        console.error('Error fetching courses:', error);
+      }
+    };
+    
+    fetchCourses();
+  }, [preferences.major, majors]);
 
   const handleMajorChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setPreferences(prev => ({
@@ -97,21 +125,21 @@ const ControlPanel: React.FC = () => {
     }));
   };
 
-  const handleCourseToggle = (course: string) => {
+  const handleCourseToggle = (courseId: number) => {
     setPreferences(prev => ({
       ...prev,
-      requiredCourses: prev.requiredCourses.includes(course)
-        ? prev.requiredCourses.filter(c => c !== course)
-        : [...prev.requiredCourses, course]
+      requiredCourses: prev.requiredCourses.includes(courseId)
+        ? prev.requiredCourses.filter(c => c !== courseId)
+        : [...prev.requiredCourses, courseId]
     }));
   };
 
-  const handleGenEdToggle = (genEd: string) => {
+  const handleGenEdToggle = (categoryId: number) => {
     setPreferences(prev => ({
       ...prev,
-      genEdPreferences: prev.genEdPreferences.includes(genEd)
-        ? prev.genEdPreferences.filter(g => g !== genEd)
-        : [...prev.genEdPreferences, genEd]
+      genEdPreferences: prev.genEdPreferences.includes(categoryId)
+        ? prev.genEdPreferences.filter(g => g !== categoryId)
+        : [...prev.genEdPreferences, categoryId]
     }));
   };
 
@@ -151,10 +179,10 @@ const ControlPanel: React.FC = () => {
         
         <div className="form-group">
           <label>Major:</label>
-          <select value={preferences.major} onChange={handleMajorChange}>
-            <option value="">Select your major</option>
+          <select value={preferences.major} onChange={handleMajorChange} disabled={loading}>
+            <option value="">{loading ? 'Loading...' : 'Select your major'}</option>
             {majors.map(major => (
-              <option key={major} value={major}>{major}</option>
+              <option key={major.id} value={major.id}>{major.name}</option>
             ))}
           </select>
         </div>
@@ -185,19 +213,19 @@ const ControlPanel: React.FC = () => {
       </div>
 
       {/* Required Courses Section */}
-      {preferences.major && (
+      {preferences.major && availableCourses.length > 0 && (
         <div className="form-section">
           <h3>📝 Required Courses</h3>
           <p className="section-description">Select courses you still need to take:</p>
           <div className="checkbox-grid">
-            {(availableCourses[preferences.major as keyof typeof availableCourses] || []).map(course => (
-              <label key={course} className="checkbox-item">
+            {availableCourses.map(course => (
+              <label key={course.id} className="checkbox-item">
                 <input 
                   type="checkbox"
-                  checked={preferences.requiredCourses.includes(course)}
-                  onChange={() => handleCourseToggle(course)}
+                  checked={preferences.requiredCourses.includes(course.id)}
+                  onChange={() => handleCourseToggle(course.id)}
                 />
-                <span>{course}</span>
+                <span>{course.course_code} {course.course_number} - {course.title} ({course.credits})</span>
               </label>
             ))}
           </div>
@@ -207,13 +235,14 @@ const ControlPanel: React.FC = () => {
       {/* Gen Ed Section */}
       <div className="form-section">
         <h3>🌟 Magis Core Requirements</h3>
-        <p className="section-description">Select Magis Core courses you still need to complete:</p>
+        <p className="section-description">Select Magis Core categories you still need to complete:</p>
         
         <div className="dropdown-container">
           <button 
             type="button"
             className="dropdown-button"
             onClick={() => setShowGenEdDropdown(!showGenEdDropdown)}
+            disabled={loading}
           >
             Select Magis Core Requirements ({preferences.genEdPreferences.length} selected)
             <span className={`dropdown-arrow ${showGenEdDropdown ? 'open' : ''}`}>▼</span>
@@ -221,14 +250,14 @@ const ControlPanel: React.FC = () => {
           
           {showGenEdDropdown && (
             <div className="dropdown-content">
-              {genEdOptions.map(genEd => (
-                <label key={genEd} className="dropdown-item">
+              {magisCategories.map(category => (
+                <label key={category.id} className="dropdown-item">
                   <input 
                     type="checkbox"
-                    checked={preferences.genEdPreferences.includes(genEd)}
-                    onChange={() => handleGenEdToggle(genEd)}
+                    checked={preferences.genEdPreferences.includes(category.id)}
+                    onChange={() => handleGenEdToggle(category.id)}
                   />
-                  <span>{genEd}</span>
+                  <span>{category.name} ({category.min_credits_required})</span>
                 </label>
               ))}
             </div>
@@ -240,18 +269,21 @@ const ControlPanel: React.FC = () => {
           <div className="selected-items">
             <h4>Selected Requirements:</h4>
             <div className="selected-tags">
-              {preferences.genEdPreferences.map(genEd => (
-                <span key={genEd} className="tag">
-                  {genEd}
-                  <button 
-                    type="button"
-                    onClick={() => handleGenEdToggle(genEd)}
-                    className="tag-remove"
-                  >
-                    ×
-                  </button>
-                </span>
-              ))}
+              {preferences.genEdPreferences.map(categoryId => {
+                const category = magisCategories.find(c => c.id === categoryId);
+                return category ? (
+                  <span key={categoryId} className="tag">
+                    {category.name}
+                    <button 
+                      type="button"
+                      onClick={() => handleGenEdToggle(categoryId)}
+                      className="tag-remove"
+                    >
+                      ×
+                    </button>
+                  </span>
+                ) : null;
+              })}
             </div>
           </div>
         )}
