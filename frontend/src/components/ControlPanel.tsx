@@ -42,7 +42,25 @@ interface SchedulePreferences {
   maxCredits: number;
 }
 
-const ControlPanel: React.FC = () => {
+interface MeetingTime {
+  day_of_week: string;
+  start_time: string;
+  end_time: string;
+}
+
+interface Section {
+  course_code: string;
+  course_number: string;
+  title: string;
+  meeting_times: MeetingTime[];
+}
+
+interface ControlPanelProps {
+  setSchedules: React.Dispatch<React.SetStateAction<Section[][]>>;
+  setCurrentIndex: React.Dispatch<React.SetStateAction<number>>;
+}
+
+const ControlPanel: React.FC<ControlPanelProps> = ({ setSchedules, setCurrentIndex }) => {
   const API_URL = 'http://localhost:8080';
 
   const [preferences, setPreferences] = useState<SchedulePreferences>({
@@ -163,10 +181,22 @@ const ControlPanel: React.FC = () => {
     }));
   };
 
-  const handleGenerateSchedule = () => {
+  const handleGenerateSchedule = async () => {
     console.log('Generating schedule with preferences:', preferences);
-    // This is where you'd call your schedule generation logic
-    alert('Schedule generation would happen here! Check console for preferences.');
+    try {
+      const response = await fetch(`${API_URL}/api/generate-schedule`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(preferences)
+      });
+      if (!response.ok) throw new Error('Failed to generate schedule');
+      const data = await response.json();
+      setSchedules(data);
+      setCurrentIndex(0);
+    } catch (error) {
+      console.error('Error generating schedule:', error);
+      alert('Failed to generate schedule.');
+    }
   };
 
   return (
