@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const { query, queryOne } = require('./db');
 const app = express();
+const { generateSchedule } = require('./scheduleGenerator');
 
 // Enable CORS for all routes
 app.use(cors());
@@ -154,6 +155,17 @@ app.get('/api/terms', async (req, res) => {
             ORDER BY start_date DESC
         `);
         res.json(terms);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Generate schedule based on preferences
+app.post('/api/generate-schedule', async (req, res) => {
+    try {
+        const preferences = req.body;
+        const schedule = await generateSchedule(preferences);
+        res.json(schedule);
     } catch (error) {
         res.status(500).json({ error: error.message });
     }

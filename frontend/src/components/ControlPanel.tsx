@@ -175,7 +175,7 @@ const ControlPanel: React.FC = () => {
       
       {/* Student Info Section */}
       <div className="form-section">
-        <h3>📚 Student Information</h3>
+        <h3>Student Information</h3>
         
         <div className="form-group">
           <label>Major:</label>
@@ -215,7 +215,7 @@ const ControlPanel: React.FC = () => {
       {/* Required Courses Section */}
       {preferences.major && availableCourses.length > 0 && (
         <div className="form-section">
-          <h3>📝 Required Courses</h3>
+          <h3>Required Courses</h3>
           <p className="section-description">Select courses you still need to take:</p>
           <div className="checkbox-grid">
             {availableCourses.map(course => (
@@ -234,7 +234,7 @@ const ControlPanel: React.FC = () => {
 
       {/* Gen Ed Section */}
       <div className="form-section">
-        <h3>🌟 Magis Core Requirements</h3>
+        <h3>Magis Core Requirements</h3>
         <p className="section-description">Select Magis Core categories you still need to complete:</p>
         
         <div className="dropdown-container">
@@ -291,7 +291,7 @@ const ControlPanel: React.FC = () => {
 
       {/* Time Preferences */}
       <div className="form-section">
-        <h3>⏰ Time Preferences</h3>
+        <h3>Time Preferences</h3>
         <div className="checkbox-grid">
           <label className="checkbox-item">
             <input 
@@ -322,7 +322,7 @@ const ControlPanel: React.FC = () => {
 
       {/* Day Preferences */}
       <div className="form-section">
-        <h3>📅 Day Preferences</h3>
+        <h3>Day Preferences</h3>
         <div className="checkbox-grid">
           <label className="checkbox-item">
             <input 
@@ -358,7 +358,7 @@ const ControlPanel: React.FC = () => {
           className="generate-btn"
           disabled={!preferences.major}
         >
-          🚀 Generate My Schedule
+          Generate My Schedule
         </button>
         {!preferences.major && (
           <p className="help-text">Please select your major to continue</p>
