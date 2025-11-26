@@ -2,14 +2,18 @@ const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 
 // Path to database file
-const dbPath = path.join(__dirname, '../Database/Scheduler.db');
+const dbPath = process.env.NODE_ENV === 'production' 
+    ? path.join(__dirname, 'Database/Scheduler.db')
+    : path.join(__dirname, '../Database/Scheduler.db');
 
 // Create database connection
 const db = new sqlite3.Database(dbPath, (err) => {
     if (err) {
         console.error('Error connecting to database:', err.message);
+        console.error('Database path:', dbPath);
     } else {
         console.log('Connected to SQLite database');
+        console.log('Database path:', dbPath);
     }
 });
 
