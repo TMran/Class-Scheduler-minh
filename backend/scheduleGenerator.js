@@ -25,7 +25,13 @@ function hasConflict(sectionA, sectionB) {
 // Main greedy schedule function
 async function generateSchedule(preferences) {
   // 1. Get all required course sections for the term
-  if (!preferences.requiredCourses || preferences.requiredCourses.length === 0) {
+  // Combine required courses and elective courses
+  const allCourseIds = [
+    ...(preferences.requiredCourses || []),
+    ...(preferences.electiveCourses || [])
+  ];
+  
+  if (allCourseIds.length === 0) {
     return [];
   }
   const termId = preferences.termId || 2;
@@ -42,7 +48,7 @@ async function generateSchedule(preferences) {
     LEFT JOIN buildings b ON r.building_id = b.id
     LEFT JOIN meeting_times mt ON cs.id = mt.section_id
     WHERE cs.term_id = ?
-      AND cs.course_id IN (${preferences.requiredCourses.join(',')})
+      AND cs.course_id IN (${allCourseIds.join(',')})
     GROUP BY cs.id
     ORDER BY c.course_code, c.course_number, cs.section_number
   `, [termId]);
@@ -135,13 +141,13 @@ async function generateSchedule(preferences) {
   const allSchedules = [];
 
   function backtrack(courseIdx, currentSchedule, currentCredits) {
-    if (courseIdx === preferences.requiredCourses.length) {
+    if (courseIdx === allCourseIds.length) {
       if (currentSchedule.length > 0) {
         allSchedules.push([...currentSchedule]);
       }
       return;
     }
-    const courseId = preferences.requiredCourses[courseIdx];
+    const courseId = allCourseIds[courseIdx];
     const possibleSections = sectionsByCourse[courseId] || [];
     
     // Branch 1: Try to add each valid section of this course

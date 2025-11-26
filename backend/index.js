@@ -73,6 +73,38 @@ app.get('/api/courses', async (req, res) => {
     }
 });
 
+// Search courses for electives
+app.get('/api/courses/search', async (req, res) => {
+    try {
+        const { q, department } = req.query;
+        let sql = `
+            SELECT c.*, d.name as department_name, d.code as department_code
+            FROM courses c
+            JOIN departments d ON c.department_id = d.id
+            WHERE 1=1
+        `;
+        const params = [];
+        
+        if (department) {
+            sql += ` AND c.course_code = ?`;
+            params.push(department);
+        }
+        
+        if (q) {
+            sql += ` AND (c.title LIKE ? OR c.course_code LIKE ? OR c.course_number LIKE ? OR c.description LIKE ?)`;
+            const searchTerm = `%${q}%`;
+            params.push(searchTerm, searchTerm, searchTerm, searchTerm);
+        }
+        
+        sql += ` ORDER BY c.course_code, c.course_number LIMIT 50`;
+        
+        const courses = await query(sql, params);
+        res.json(courses);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // Get course sections with meeting times for a specific term
 app.get('/api/sections', async (req, res) => {
     const termId = req.query.term_id || 2; // Default to Spring 2025

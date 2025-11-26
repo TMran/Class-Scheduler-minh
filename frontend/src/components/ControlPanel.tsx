@@ -28,6 +28,7 @@ interface SchedulePreferences {
   major: string;
   year: string;
   requiredCourses: number[];
+  electiveCourses: number[];
   genEdPreferences: number[];
   timePreferences: {
     preferMorning: boolean;
@@ -67,6 +68,7 @@ const ControlPanel: React.FC<ControlPanelProps> = ({ setSchedules, setCurrentInd
     major: '',
     year: 'sophomore',
     requiredCourses: [],
+    electiveCourses: [],
     genEdPreferences: [],
     timePreferences: {
       preferMorning: false,
@@ -87,21 +89,34 @@ const ControlPanel: React.FC<ControlPanelProps> = ({ setSchedules, setCurrentInd
   const [magisCategories, setMagisCategories] = useState<MagisCoreCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [showGenEdDropdown, setShowGenEdDropdown] = useState(false);
+  
+  // Elective search states
+  const [electiveSearchQuery, setElectiveSearchQuery] = useState('');
+  const [electiveSearchResults, setElectiveSearchResults] = useState<Course[]>([]);
+  const [departments, setDepartments] = useState<string[]>([]);
+  const [selectedDepartment, setSelectedDepartment] = useState('');
+  const [departmentCourses, setDepartmentCourses] = useState<Record<string, Course[]>>({});
+  const [showDepartmentBrowser, setShowDepartmentBrowser] = useState(false);
+  const [expandedDepartment, setExpandedDepartment] = useState<string | null>(null);
+  const [selectedElectives, setSelectedElectives] = useState<Course[]>([]);
 
   // Fetch majors and Magis Core categories on component mount
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [majorsRes, categoriesRes] = await Promise.all([
+        const [majorsRes, categoriesRes, deptRes] = await Promise.all([
           fetch(`${API_URL}/api/majors`),
-          fetch(`${API_URL}/api/magis-core/categories`)
+          fetch(`${API_URL}/api/magis-core/categories`),
+          fetch(`${API_URL}/api/departments`)
         ]);
         
         const majorsData = await majorsRes.json();
         const categoriesData = await categoriesRes.json();
+        const deptData = await deptRes.json();
         
         setMajors(majorsData);
         setMagisCategories(categoriesData);
+        setDepartments(deptData.map((d: any) => d.code).sort());
         setLoading(false);
       } catch (error) {
         console.error('Error fetching data:', error);
@@ -160,6 +175,79 @@ const ControlPanel: React.FC<ControlPanelProps> = ({ setSchedules, setCurrentInd
         : [...prev.genEdPreferences, categoryId]
     }));
   };
+
+  const handleElectiveToggle = (courseId: number) => {
+    setPreferences(prev => ({
+      ...prev,
+      electiveCourses: prev.electiveCourses.includes(courseId)
+        ? prev.electiveCourses.filter(c => c !== courseId)
+        : [...prev.electiveCourses, courseId]
+    }));
+  };
+
+  const handleElectiveSearch = async () => {
+    if (!electiveSearchQuery.trim()) {
+      setElectiveSearchResults([]);
+      return;
+    }
+    
+    try {
+      const params = new URLSearchParams();
+      params.append('q', electiveSearchQuery);
+      
+      const response = await fetch(`${API_URL}/api/courses/search?${params}`);
+      const data = await response.json();
+      setElectiveSearchResults(data);
+    } catch (error) {
+      console.error('Error searching courses:', error);
+    }
+  };
+
+  // Trigger search when query changes
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      handleElectiveSearch();
+    }, 300); // Debounce search
+    
+    return () => clearTimeout(timer);
+  }, [electiveSearchQuery]);
+
+  // Fetch courses when department is selected
+  const handleDepartmentSelect = async (deptCode: string) => {
+    // Toggle expansion
+    if (expandedDepartment === deptCode) {
+      setExpandedDepartment(null);
+      return;
+    }
+    
+    setExpandedDepartment(deptCode);
+    
+    // Fetch courses if not already cached
+    if (!departmentCourses[deptCode]) {
+      try {
+        const params = new URLSearchParams();
+        params.append('department', deptCode);
+        
+        const response = await fetch(`${API_URL}/api/courses/search?${params}`);
+        const data = await response.json();
+        setDepartmentCourses(prev => ({ ...prev, [deptCode]: data }));
+      } catch (error) {
+        console.error('Error fetching department courses:', error);
+      }
+    }
+  };
+
+  // Update selected electives when preferences change
+  useEffect(() => {
+    const allCourses = [
+      ...electiveSearchResults,
+      ...Object.values(departmentCourses).flat()
+    ];
+    const selected = preferences.electiveCourses
+      .map(id => allCourses.find(c => c.id === id))
+      .filter((c): c is Course => c !== undefined);
+    setSelectedElectives(selected);
+  }, [preferences.electiveCourses, electiveSearchResults, departmentCourses]);
 
   const handleTimePreferenceChange = (pref: keyof typeof preferences.timePreferences) => {
     setPreferences(prev => ({
@@ -255,12 +343,129 @@ const ControlPanel: React.FC<ControlPanelProps> = ({ setSchedules, setCurrentInd
                   checked={preferences.requiredCourses.includes(course.id)}
                   onChange={() => handleCourseToggle(course.id)}
                 />
-                <span>{course.course_code} {course.course_number} - {course.title} ({course.credits})</span>
+                <span>{course.course_code} {course.course_number} {course.title} ({course.credits})</span>
               </label>
             ))}
           </div>
         </div>
       )}
+
+      {/* Elective Courses Section */}
+      <div className="form-section">
+        <h3>Elective Courses</h3>
+        <p className="section-description">Search or browse by department to add electives:</p>
+        
+        {/* Search Bar */}
+        <div className="elective-search-bar">
+          <input
+            type="text"
+            placeholder="Search for course"
+            value={electiveSearchQuery}
+            onChange={(e) => setElectiveSearchQuery(e.target.value)}
+            className="elective-search-input"
+          />
+        </div>
+        
+        {/* Search Results */}
+        {electiveSearchResults.length > 0 && (
+          <div className="search-results-dropdown">
+            {electiveSearchResults.map(course => (
+              <div key={course.id} className="search-result-item">
+                <input 
+                  type="checkbox"
+                  checked={preferences.electiveCourses.includes(course.id)}
+                  onChange={() => handleElectiveToggle(course.id)}
+                />
+                <div className="search-course-info">
+                  <strong>{course.course_code} {course.course_number}</strong>
+                  <span> {course.title}</span>
+                  <span className="course-credits-badge">{course.credits} credits</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+        
+        {/* Debug info */}
+        {electiveSearchQuery.trim() && electiveSearchResults.length === 0 && (
+          <div style={{padding: '10px', color: '#666', fontStyle: 'italic'}}>
+            No results found for "{electiveSearchQuery}"
+          </div>
+        )}
+        
+        {/* Department Browser */}
+        <div className="department-browser-container">
+          <button
+            type="button"
+            className={`department-browser-toggle ${showDepartmentBrowser ? 'active' : ''}`}
+            onClick={() => setShowDepartmentBrowser(!showDepartmentBrowser)}
+          >
+            <span>Browse by Department</span>
+            <span className="dropdown-arrow">{showDepartmentBrowser ? '▲' : '▼'}</span>
+          </button>
+          
+          {showDepartmentBrowser && (
+            <div className="department-list">
+              {departments.map(dept => (
+                <div key={dept} className="department-section">
+                  <button
+                    type="button"
+                    className={`department-header ${expandedDepartment === dept ? 'expanded' : ''}`}
+                    onClick={() => handleDepartmentSelect(dept)}
+                  >
+                    <span className="dept-code">{dept}</span>
+                    <span className="expand-arrow">{expandedDepartment === dept ? '▼' : '▶'}</span>
+                  </button>
+                  
+                  {expandedDepartment === dept && (
+                    <div className="department-courses">
+                      {!departmentCourses[dept] || departmentCourses[dept].length === 0 ? (
+                        <p className="no-courses">No courses available</p>
+                      ) : (
+                        departmentCourses[dept].map(course => (
+                          <label key={course.id} className="course-item">
+                            <input 
+                              type="checkbox"
+                              checked={preferences.electiveCourses.includes(course.id)}
+                              onChange={() => handleElectiveToggle(course.id)}
+                            />
+                            <span className="course-details">
+                              <strong>{course.course_code} {course.course_number}</strong>
+                              <span className="course-title">{course.title}</span>
+                              <span className="course-credits-badge">{course.credits} credits</span>
+                            </span>
+                          </label>
+                        ))
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+        
+        {/* Show selected electives */}
+        {selectedElectives.length > 0 && (
+          <div className="selected-items">
+            <p className="selected-label"><strong>Selected Electives ({selectedElectives.length}):</strong></p>
+            <div className="selected-chips">
+              {selectedElectives.map(course => (
+                <div key={course.id} className="selected-chip">
+                  {course.course_code} {course.course_number}
+                  <button 
+                    type="button"
+                    onClick={() => handleElectiveToggle(course.id)}
+                    className="remove-chip"
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* Gen Ed Section */}
       <div className="form-section">

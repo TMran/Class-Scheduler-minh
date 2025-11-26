@@ -47,20 +47,52 @@ const CalendarView: React.FC<CalendarViewProps> = ({ schedules, currentIndex, on
 
   const schedule = schedules[currentIndex] || [];
 
-  function getSectionForCell(day: string, time: string) {
-    function toAmPm(hm: string) {
-      const [h, m] = hm.split(':').map(Number);
-      const ampm = h >= 12 ? 'PM' : 'AM';
-      const hour = ((h + 11) % 12) + 1;
-      return `${hour}:${m.toString().padStart(2, '0')} ${ampm}`;
+  const timeToMinutes = (timeStr: string): number => {
+    const match = timeStr.match(/(\d+):(\d+)(?:\s+(AM|PM))?/);
+    if (!match) { // Handle "13:00" format
+        const plainMatch = timeStr.match(/(\d+):(\d+)/);
+        if (plainMatch) {
+            return parseInt(plainMatch[1], 10) * 60 + parseInt(plainMatch[2], 10);
+        }
+        return 0;
     }
+
+    let hour = parseInt(match[1], 10);
+    const minute = parseInt(match[2], 10);
+    const period = match[3]?.toUpperCase();
+
+    if (period) {
+      if (period === 'PM' && hour !== 12) {
+        hour += 12;
+      } else if (period === 'AM' && hour === 12) {
+        hour = 0;
+      }
+    }
+    return hour * 60 + minute;
+  };
+
+  function getSectionForCell(day: string, time: string) {
+    const slotStartMinutes = timeToMinutes(time);
+    const slotEndMinutes = slotStartMinutes + 60;
 
     for (const section of schedule) {
       for (const mt of section.meeting_times) {
         const mtDay = mt.day_of_week.charAt(0).toUpperCase() + mt.day_of_week.slice(1).toLowerCase();
-        const mtTime = toAmPm(mt.start_time);
-        if (mtDay === day && mtTime === time) {
-          return { section, meetingTime: mt };
+        
+        if (mtDay === day) {
+          const courseStartMinutes = timeToMinutes(mt.start_time);
+          const courseEndMinutes = timeToMinutes(mt.end_time);
+          
+          // Only render the block in the cell where the course begins
+          if (courseStartMinutes >= slotStartMinutes && courseStartMinutes < slotEndMinutes) {
+            const offsetMinutes = courseStartMinutes - slotStartMinutes;
+            const offsetPercent = (offsetMinutes / 60) * 100;
+            
+            const totalDurationMinutes = courseEndMinutes - courseStartMinutes;
+            const durationPercent = (totalDurationMinutes / 60) * 100;
+            
+            return { section, meetingTime: mt, offsetPercent, durationPercent };
+          }
         }
       }
     }
@@ -92,7 +124,13 @@ const CalendarView: React.FC<CalendarViewProps> = ({ schedules, currentIndex, on
               return (
                 <div key={`${day}-${time}`} className="schedule-cell">
                   {result ? (
-                    <div className="course-info">
+                    <div 
+                      className="course-info"
+                      style={{ 
+                        top: `${result.offsetPercent}%`,
+                        height: `${result.durationPercent}%`
+                      }}
+                    >
                       <div className="course-header">
                         <strong>{result.section.course_code} {result.section.course_number}</strong>
                       </div>
@@ -100,18 +138,24 @@ const CalendarView: React.FC<CalendarViewProps> = ({ schedules, currentIndex, on
                       <div className="course-time">
                         {result.meetingTime.start_time} - {result.meetingTime.end_time}
                       </div>
-                      {result.section.building_name && result.section.room_number && (
-                        <div className="course-room">{result.section.building_name} {result.section.room_number}</div>
-                      )}
-                      {result.section.instructor_name && (
-                        <div className="course-instructor">{result.section.instructor_name}</div>
-                      )}
-                      <div className="course-details">
-                        {result.section.crn && <span className="course-crn">CRN: {result.section.crn}</span>}
-                        {result.section.credits && <span className="course-credits">{result.section.credits} credits</span>}
-                        {result.section.available_seats !== undefined && (
-                          <span className="course-seats">{result.section.available_seats} seats</span>
+                      <div className="course-extra-details">
+                        {result.section.building_name && result.section.room_number && (
+                          <div className="course-room">{result.section.building_name} {result.section.room_number}</div>
                         )}
+                        {result.section.instructor_name && (
+                          <div className="course-instructor">{result.section.instructor_name}</div>
+                        )}
+                        <div className="course-details">
+                          {result.section.crn && (
+                            <span className="course-crn">CRN: {result.section.crn}</span>
+                          )}
+                          {result.section.credits && (
+                            <span className="course-credits">{result.section.credits} credits</span>
+                          )}
+                          {result.section.available_seats !== undefined && (
+                            <span className="course-seats">{result.section.available_seats} seats</span>
+                          )}
+                        </div>
                       </div>
                     </div>
                   ) : null}
