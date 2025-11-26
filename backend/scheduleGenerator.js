@@ -132,51 +132,79 @@ async function generateSchedule(preferences) {
   console.log('Preferences:', JSON.stringify(preferences, null, 2));
   console.log(`\nFound ${Object.keys(sectionsByCourse).length} courses with sections`);
   
-  const results = [];
+  const allSchedules = [];
+
   function backtrack(courseIdx, currentSchedule, currentCredits) {
     if (courseIdx === preferences.requiredCourses.length) {
-      // Only save schedules that have at least one course
       if (currentSchedule.length > 0) {
-        console.log(`\nValid schedule #${results.length + 1} found:`);
-        currentSchedule.forEach(s => {
-          const days = s.meeting_times.map(mt => mt.day_of_week).join('/');
-          const times = s.meeting_times.map(mt => `${mt.start_time}-${mt.end_time}`).join(', ');
-          console.log(`  ${s.course_code} ${s.course_number}: ${days} ${times}`);
-        });
-        results.push([...currentSchedule]);
+        allSchedules.push([...currentSchedule]);
       }
       return;
     }
     const courseId = preferences.requiredCourses[courseIdx];
     const possibleSections = sectionsByCourse[courseId] || [];
-    console.log(`\nProcessing course ID ${courseId} (${possibleSections.length} sections available)`);
     
-    let foundValidSection = false;
+    // Branch 1: Try to add each valid section of this course
     for (const section of possibleSections) {
-      if (currentCredits + section.credits > preferences.maxCredits) {
-        console.log(`  Section ${section.course_code} ${section.course_number} exceeds max credits`);
-        continue;
-      }
+      if (currentCredits + section.credits > preferences.maxCredits) continue;
       if (!matchesPreferences(section)) continue;
-      if (currentSchedule.some(s => hasConflict(s, section))) {
-        console.log(`  Section ${section.course_code} ${section.course_number} has time conflict`);
+      
+      // Check for conflicts with currently scheduled courses
+      const conflict = currentSchedule.find(s => hasConflict(s, section));
+      if (conflict) {
+        console.log(`  Skipping section ${section.course_code} ${section.course_number} due to conflict with ${conflict.course_code} ${conflict.course_number}`);
         continue;
       }
-      console.log(`Adding ${section.course_code} ${section.course_number} to schedule`);
-      foundValidSection = true;
+
       currentSchedule.push(section);
       backtrack(courseIdx + 1, currentSchedule, currentCredits + section.credits);
       currentSchedule.pop();
     }
     
-    // If no valid sections found for this course, skip it and continue with next course
-    if (!foundValidSection) {
-      console.log(`No valid sections for course ID ${courseId}, skipping to next course`);
-      backtrack(courseIdx + 1, currentSchedule, currentCredits);
-    }
+    // Branch 2: Skip this course entirely
+    backtrack(courseIdx + 1, currentSchedule, currentCredits);
   }
 
   backtrack(0, [], 0);
+
+  // Post-processing: Filter to keep only maximal schedules
+  // A schedule is maximal if it is not a strict subset of another valid schedule.
+  // This removes partial schedules like [A] when [A, B] is possible.
+  const maximalSchedules = [];
+  const scheduleSignatures = new Set();
+
+  // Sort by length descending so we process larger schedules first
+  allSchedules.sort((a, b) => b.length - a.length);
+
+  for (const schedule of allSchedules) {
+    // Create a signature for easy duplicate detection
+    const signature = schedule.map(s => s.id).sort().join('|');
+    if (scheduleSignatures.has(signature)) continue;
+
+    // Check if this schedule is a subset of any already accepted maximal schedule
+    const isSubset = maximalSchedules.some(existing => 
+      schedule.every(s => existing.some(e => e.id === s.id))
+    );
+
+    if (!isSubset) {
+      maximalSchedules.push(schedule);
+      scheduleSignatures.add(signature);
+    }
+  }
+
+  const results = maximalSchedules;
+  
+  console.log(`\nGenerated ${allSchedules.length} combinations. Filtered to ${results.length} maximal schedules.`);
+  
+  results.forEach((schedule, idx) => {
+    console.log(`\nValid schedule #${idx + 1} found:`);
+    schedule.forEach(s => {
+      const days = s.meeting_times.map(mt => mt.day_of_week).join('/');
+      const times = s.meeting_times.map(mt => `${mt.start_time}-${mt.end_time}`).join(', ');
+      console.log(`  ${s.course_code} ${s.course_number}: ${days} ${times}`);
+    });
+  });
+
   console.log(`\nTotal schedules generated: ${results.length}\n`);
   return results;
 }
