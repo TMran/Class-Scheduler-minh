@@ -20,6 +20,11 @@ function App() {
   const [schedules, setSchedules] = useState<Section[][]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
 
+  // ================================
+  // NEW: State for notification message
+  // ================================
+  const [message, setMessage] = useState('');
+
   const handlePrev = () => setCurrentIndex(i => Math.max(0, i - 1));
   const handleNext = () => setCurrentIndex(i => Math.min(schedules.length - 1, i + 1));
 
@@ -30,12 +35,16 @@ function App() {
       </header>
       <div className="main-container">
         <div className="left-panel">
+          {/* Pass setMessage to ControlPanel so it can show notifications */}
           <ControlPanel 
             setSchedules={setSchedules}
             setCurrentIndex={setCurrentIndex}
+            // setMessage={setMessage} // <-- NEW prop
           />
         </div>
         <div className="right-panel">
+          {/* NEW: Show notification if message exists */}
+          {message && <div className="notification">{message}</div>}
           <CalendarView 
             schedules={schedules}
             currentIndex={currentIndex}

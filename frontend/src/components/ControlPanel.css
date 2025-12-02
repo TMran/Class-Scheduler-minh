@@ -570,3 +570,42 @@ input[type="range"]::-moz-range-thumb {
 .remove-chip:hover {
   background-color: rgba(255, 255, 255, 0.3);
 }
+
+.overlay-message {
+  position: fixed;       /* so it floats above everything */
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: rgba(255, 0, 0, 0.904); /* red with 70% opacity */
+  color: white;
+  padding: 20px 30px;
+  border-radius: 10px;
+  font-size: 18px;
+  z-index: 9999;         /* ensure it’s on top */
+  text-align: center;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+
+    /* Animation */
+  animation: slideFade 3s forwards; /* 3s matches your auto-hide timer */
+}
+
+/* Keyframes for slide + fade */
+@keyframes slideFade {
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-20px); /* start slightly up */
+  }
+  10% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0); /* slide to position */
+  }
+  90% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0); /* stay visible */
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(20px); /* slide down as it disappears */
+  }
+}
+

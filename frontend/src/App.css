@@ -13,6 +13,7 @@
   color: white;
   text-align: center;
   box-shadow: 0 2px 4px rgba(0,51,102,0.3);
+  
 }
 
 .App-header h1 {
@@ -26,6 +27,7 @@
   display: flex;
   flex: 1;
   overflow: hidden;
+  min-height: 0;
 }
 
 .left-panel {
@@ -34,7 +36,16 @@
   max-width: 400px;
   background-color: #f8f9fa;
   overflow-y: auto;
+
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 auto;
 }
+
+.left-panel > * {
+overflow: visible
+;}
+
 
 .right-panel {
   flex: 1;

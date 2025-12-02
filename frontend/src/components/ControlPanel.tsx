@@ -90,6 +90,21 @@ const ControlPanel: React.FC<ControlPanelProps> = ({ setSchedules, setCurrentInd
   const [loading, setLoading] = useState(true);
   const [showGenEdDropdown, setShowGenEdDropdown] = useState(false);
   
+  // State for no schedules message
+  const [noSchedulesMessage, setNoSchedulesMessage] = useState('');
+
+  // Auto-hide overlay after 3 seconds
+  useEffect(() => {
+    if (noSchedulesMessage) {
+      const timer = setTimeout(() => {
+        setNoSchedulesMessage('');
+      }, 3000); // 3 seconds
+
+      return () => clearTimeout(timer);
+    }
+  }, [noSchedulesMessage]);
+
+  
   // Elective search states
   const [electiveSearchQuery, setElectiveSearchQuery] = useState('');
   const [electiveSearchResults, setElectiveSearchResults] = useState<Course[]>([]);
@@ -281,6 +296,14 @@ const ControlPanel: React.FC<ControlPanelProps> = ({ setSchedules, setCurrentInd
       const data = await response.json();
       setSchedules(data);
       setCurrentIndex(0);
+
+    // <-- New logic for no schedules
+    if (data.length === 0) {
+      setNoSchedulesMessage('No schedules could be generated with the selected preferences.');
+    } else {
+      setNoSchedulesMessage(''); // Clear message if schedules exist
+    }
+
     } catch (error) {
       console.error('Error generating schedule:', error);
       alert('Failed to generate schedule.');
@@ -289,6 +312,14 @@ const ControlPanel: React.FC<ControlPanelProps> = ({ setSchedules, setCurrentInd
 
   return (
     <div className="control-panel">
+
+    {/* Overlay message for no schedules */}
+    {noSchedulesMessage && (
+      <div className="overlay-message">
+        {noSchedulesMessage}
+      </div>
+    )}
+
       <h2>Schedule Generator</h2>
       
       {/* Student Info Section */}
